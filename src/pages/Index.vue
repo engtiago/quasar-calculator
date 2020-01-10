@@ -45,17 +45,24 @@ export default {
       previous: null,
       current: '',
       operator: null,
-      operatorClicked: false
+      operatorClicked: false,
+      result: null
     }
   },
   methods: {
     clear () {
-      this.current = ''
+      if (this.operatorClicked) {
+        this.operatorClicked = false
+        this.operator = null
+      } else {
+        this.current = ''
+      }
     },
     clearAll () {
       this.current = ''
       this.previous = null
-      this.operatorvalue = ''
+      this.operator = null
+      this.operatorClicked = false
     },
     sign () {
       if (this.current !== '') {
@@ -63,7 +70,18 @@ export default {
       }
     },
     append (number) {
-      this.current = this.current.length < 8 && !(number === '0' && this.current === '') ? `${this.current}${number}` : this.current
+      if (this.operatorClicked) {
+        this.current = ''
+        this.operatorClicked = false
+      }
+      var quantDec = true
+      if (isFinite(parseFloat(this.current))) {
+        const valor = this.current.toString().split('.')[1]
+        if (valor !== undefined) {
+          quantDec = this.current.toString().split('.')[1].length < 3
+        }
+      }
+      this.current = this.current.length < 8 && !(number === '0' && this.current === '') && quantDec ? `${this.current}${number}` : this.current
     },
     dot () {
       if (this.current.indexOf('.') === -1 && this.current !== '') {
@@ -71,12 +89,15 @@ export default {
       }
     },
     setPrevious () {
+      if (this.operatorClicked) {
+        this.append(this.current)
+        this.equal()
+      }
       this.previous = this.current
       this.operatorClicked = true
-      this.current = ''
     },
     divide () {
-      this.operator = (a, b) => a / b
+      this.operator = (a, b) => b / a
       this.setPrevious()
     },
     // times () {
@@ -93,20 +114,21 @@ export default {
     },
     equal () {
       const validacao = !isNaN(parseFloat(this.previous)) && isFinite(this.previous)
-      if (this.operatorClicked && validacao) {
+      if (this.operator !== null && validacao) {
         const res = `${this.operator(
           parseFloat(this.current),
           parseFloat(this.previous)
         )}`
         if (res.length < 8) {
-          this.current = res
-        } else if (isFinite(res)) {
+          this.current = !isNaN(res) ? res : 0
+        } else if (isFinite(res) && (parseFloat(res).toFixed(3) < 8)) {
           this.current = parseFloat(res).toFixed(3)
         } else {
           this.current = 'ERR'
         }
-        this.previous = null
+        // this.previous = null
         this.operatorClicked = false
+        this.result = this.current
       }
     }
   }
